@@ -1,0 +1,35 @@
+{
+  "name": "@tgsnake/bytesio",
+  "packageManager": "yarn@4.9.2",
+  "version": "1.0.0",
+  "description": "A simple BytesIO implementation for Typescript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepare": "yarn build",
+    "prettier": "NODE_OPTIONS=--max_old_space_size=4096 prettier -w .",
+    "docs": "typedoc --out docs src/BytesIO.ts --excludePrivate --excludeProtected --excludeInternal --theme default --readme none"
+  },
+  "homepage": "https://tgsnake.js.org",
+  "keywords": [
+    "tgsnake",
+    "BytesIO",
+    "Buffer"
+  ],
+  "bugs": "https://github.com/tgsnake/bytesio/issues",
+  "repository": "https://github.com/tgsnake/bytesio",
+  "author": "butthx",
+  "files": [
+    "dist/**/**"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "^1.2.18",
+    "@types/node": "^24.0.13",
+    "prettier": "^3.6.2",
+    "typedoc": "^0.28.7",
+    "typescript": "^5.8.3"
+  }
+}
