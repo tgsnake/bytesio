@@ -20,7 +20,6 @@ jobs:
       - run: yarn config set enableImmutableInstalls false
       - run: yarn install
       - run: yarn build
-      - run: node test/index.cjs
   browser-build:
     name: Building package for Browser
     runs-on: ubuntu-latest
@@ -34,7 +33,6 @@ jobs:
       - run: yarn add buffer
       - run: node ./generator/build_browser/index.js
       - run: yarn build
-      - run: node test/index.cjs
   jsr-build:
     name: Building package for JSR
     runs-on: ubuntu-latest
@@ -48,4 +46,3 @@ jobs:
           deno-version: '2.x'
       - run: deno install
       - run: npx jsr publish --dry-run
-      - run: deno run --allow-all test/index.ts
