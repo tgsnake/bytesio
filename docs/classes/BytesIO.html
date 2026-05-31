@@ -70,9 +70,14 @@
         <section class="tsd-panel tsd-comment">
           <div class="tsd-comment tsd-typography">
             <p>
-              A class for reading and writing binary data using Node.js Buffers, similar to Python's
-              BytesIO. Provides methods for seeking, slicing, reading, and writing various data
-              types.
+              A versatile in-memory binary stream class utilizing Node.js <code>Buffer</code>s.
+              Mimics the behavior of Python's built-in <code>io.BytesIO</code> module, providing a
+              stream-like interface for reading and writing binary data in memory.
+            </p>
+            <p>
+              Supports sequential and random-access operations using a seekable internal pointer,
+              and provides convenient helper methods to read and write integers, floats, doubles,
+              and raw buffers.
             </p>
           </div>
           <div class="tsd-comment tsd-typography">
@@ -84,8 +89,9 @@
                 ></a>
               </h4>
               <p>
-                This class is useful for manipulating binary data in memory, supporting random
-                access and reading/writing of integers, floats, and raw buffers.
+                This class is highly optimized for performance and is particularly useful in
+                environments requiring low-level binary manipulation, such as network protocols,
+                file parsers, and custom serializers.
               </p>
             </div>
             <div class="tsd-tag-example">
@@ -95,14 +101,32 @@
                     <use href="../assets/icons.svg#icon-anchor"></use></svg
                 ></a>
               </h4>
-              <pre><code class="typescript"><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">bio</span><span class="hl-1"> = </span><span class="hl-3">BytesIO</span><span class="hl-1">.</span><span class="hl-4">from</span><span class="hl-1">([</span><span class="hl-5">1</span><span class="hl-1">, </span><span class="hl-5">2</span><span class="hl-1">, </span><span class="hl-5">3</span><span class="hl-1">, </span><span class="hl-5">4</span><span class="hl-1">]);</span><br/><span class="hl-6">bio</span><span class="hl-1">.</span><span class="hl-7">seek</span><span class="hl-1">(</span><span class="hl-8">0</span><span class="hl-1">);</span><br/><span class="hl-0">const</span><span class="hl-1"> </span><span class="hl-2">value</span><span class="hl-1"> = </span><span class="hl-6">bio</span><span class="hl-1">.</span><span class="hl-7">readInt32LE</span><span class="hl-1">();</span>
+              <p><strong>Writing and Reading Data:</strong></p>
+              <pre><code class="typescript"><span class="hl-0">import</span><span class="hl-1"> { </span><span class="hl-2">BytesIO</span><span class="hl-1"> } </span><span class="hl-0">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@tgsnake/bytesio&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-4">// Create a BytesIO instance from existing data</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">stream</span><span class="hl-1"> = </span><span class="hl-2">BytesIO</span><span class="hl-1">.</span><span class="hl-7">from</span><span class="hl-1">([</span><span class="hl-8">0x01</span><span class="hl-1">, </span><span class="hl-8">0x02</span><span class="hl-1">, </span><span class="hl-8">0x03</span><span class="hl-1">, </span><span class="hl-8">0x04</span><span class="hl-1">]);</span><br/><br/><span class="hl-4">// Read a 32-bit signed integer in little-endian format</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">intVal</span><span class="hl-1"> = </span><span class="hl-2">stream</span><span class="hl-1">.</span><span class="hl-7">readInt32LE</span><span class="hl-1">(); </span><span class="hl-4">// Reads 4 bytes and advances pointer</span><br/><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-7">log</span><span class="hl-1">(</span><span class="hl-2">intVal</span><span class="hl-1">); </span><span class="hl-4">// Output: 67305985</span>
+</code><button type="button">Copy</button></pre>
+            </div>
+            <div class="tsd-tag-example">
+              <h4 class="tsd-anchor-link" id="example-1">
+                Example<a href="#example-1" aria-label="Permalink" class="tsd-anchor-icon"
+                  ><svg viewBox="0 0 24 24" aria-hidden="true">
+                    <use href="../assets/icons.svg#icon-anchor"></use></svg
+                ></a>
+              </h4>
+              <p><strong>Seeking the Stream Pointer:</strong></p>
+              <pre><code class="typescript"><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">stream</span><span class="hl-1"> = </span><span class="hl-2">BytesIO</span><span class="hl-1">.</span><span class="hl-7">from</span><span class="hl-1">(</span><span class="hl-3">&#39;Hello, World!&#39;</span><span class="hl-1">, </span><span class="hl-3">&#39;utf-8&#39;</span><span class="hl-1">);</span><br/><br/><span class="hl-4">// Seek to position 7 (from the beginning of the buffer)</span><br/><span class="hl-2">stream</span><span class="hl-1">.</span><span class="hl-7">seek</span><span class="hl-1">(</span><span class="hl-8">7</span><span class="hl-1">, </span><span class="hl-8">0</span><span class="hl-1">);</span><br/><br/><span class="hl-4">// Read remaining bytes</span><br/><span class="hl-5">const</span><span class="hl-1"> </span><span class="hl-6">msg</span><span class="hl-1"> = </span><span class="hl-2">stream</span><span class="hl-1">.</span><span class="hl-7">read</span><span class="hl-1">().</span><span class="hl-7">toString</span><span class="hl-1">(</span><span class="hl-3">&#39;utf-8&#39;</span><span class="hl-1">);</span><br/><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-7">log</span><span class="hl-1">(</span><span class="hl-2">msg</span><span class="hl-1">); </span><span class="hl-4">// Output: &#39;World!&#39;</span>
 </code><button type="button">Copy</button></pre>
             </div>
           </div>
         </section>
         <aside class="tsd-sources">
           <ul>
-            <li>Defined in src/BytesIO.ts:27</li>
+            <li>
+              Defined in
+              <a
+                href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L50"
+                >BytesIO.ts:50</a
+              >
+            </li>
           </ul>
         </aside>
         <section class="tsd-panel-group tsd-index-group">
@@ -293,6 +317,9 @@
                     ></a>
                   </div>
                   <div class="tsd-description">
+                    <div class="tsd-comment tsd-typography">
+                      <p>Initializes a new instance of the <code>BytesIO</code> class.</p>
+                    </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
                       <ul class="tsd-parameter-list">
@@ -302,6 +329,12 @@
                             <span class="tsd-signature-type">Buffer</span
                             ><span class="tsd-signature-symbol"> = ...</span></span
                           >
+                          <div class="tsd-comment tsd-typography">
+                            <p>
+                              The initial binary buffer to populate the
+                              <code>BytesIO</code> instance with. Defaults to an empty buffer.
+                            </p>
+                          </div>
                         </li>
                       </ul>
                     </div>
@@ -310,7 +343,13 @@
                     </h4>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:34</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L68"
+                            >BytesIO.ts:68</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -345,14 +384,25 @@
                     <span class="tsd-signature-type">Buffer</span>
                   </div>
                   <div class="tsd-description">
-                    <div class="tsd-comment tsd-typography"><p>Gets the underlying Buffer.</p></div>
+                    <div class="tsd-comment tsd-typography">
+                      <p>
+                        Gets the raw, underlying <code>Buffer</code> instance managed by this
+                        <code>BytesIO</code> object.
+                      </p>
+                    </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Buffer</span>
                     </h4>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The underlying <code>Buffer</code> instance.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:291</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L398"
+                            >BytesIO.ts:398</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -378,15 +428,21 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Gets the length of the buffer in bytes.</p>
+                      <p>Gets the total size of the underlying buffer in bytes.</p>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The byte length of the buffer.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:285</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L389"
+                            >BytesIO.ts:389</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -412,15 +468,21 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Gets the current pointer position.</p>
+                      <p>Gets the current read/write pointer (offset index) within the buffer.</p>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The current pointer position.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:297</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L407"
+                            >BytesIO.ts:407</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -464,8 +526,8 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a specified number of bytes from the current pointer. Advances the
-                        pointer by the number of bytes read.
+                        Reads binary data from the current pointer position. Advances the internal
+                        pointer by the number of bytes successfully read.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -478,20 +540,32 @@
                             <span class="tsd-signature-type">number</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>The number of bytes to read. If undefined, reads to the end.</p>
+                            <p>
+                              The number of bytes to read. - If <code>undefined</code> or not
+                              provided, reads all remaining bytes from the current pointer to the
+                              end of the buffer. - If provided, reads at most
+                              <code>length</code> bytes from the current pointer position.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">Buffer</span>
                     </h4>
-                    <p>A Buffer containing the read bytes.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      A new <code>Buffer</code> containing the read bytes. If the pointer is out of
+                      bounds or <code>length</code> is less than 1, returns an empty buffer.
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:100</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L164"
+                            >BytesIO.ts:164</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -525,8 +599,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 64-bit signed integer (big-endian) from the current pointer.
-                        Advances the pointer by 8 bytes (or specified size).
+                        Reads a signed 64-bit BigInt in big-endian format (<code>BigInt64BE</code>)
+                        from the current pointer position. Automatically advances the pointer by the
+                        specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -539,20 +614,30 @@
                             ><span class="tsd-signature-symbol"> = 8</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 8.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>8</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">bigint</span>
                     </h4>
-                    <p>The read bigint.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      The read signed 64-bit BigInt (value ranges from -9,223,372,036,854,775,808n
+                      to 9,223,372,036,854,775,807n).
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:174</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L250"
+                            >BytesIO.ts:250</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -586,8 +671,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 64-bit signed integer (little-endian) from the current pointer.
-                        Advances the pointer by 8 bytes (or specified size).
+                        Reads a signed 64-bit BigInt in little-endian format
+                        (<code>BigInt64LE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -600,20 +686,30 @@
                             ><span class="tsd-signature-symbol"> = 8</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 8.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>8</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">bigint</span>
                     </h4>
-                    <p>The read bigint.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      The read signed 64-bit BigInt (value ranges from -9,223,372,036,854,775,808n
+                      to 9,223,372,036,854,775,807n).
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:163</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L237"
+                            >BytesIO.ts:237</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -647,8 +743,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 64-bit unsigned integer (big-endian) from the current pointer.
-                        Advances the pointer by 8 bytes (or specified size).
+                        Reads an unsigned 64-bit BigInt in big-endian format
+                        (<code>BigUInt64BE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -661,20 +758,30 @@
                             ><span class="tsd-signature-symbol"> = 8</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 8.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>8</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">bigint</span>
                     </h4>
-                    <p>The read bigint.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      The read unsigned 64-bit BigInt (value ranges from 0n to
+                      18,446,744,073,709,551,615n).
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:196</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L276"
+                            >BytesIO.ts:276</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -708,8 +815,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 64-bit unsigned integer (little-endian) from the current pointer.
-                        Advances the pointer by 8 bytes (or specified size).
+                        Reads an unsigned 64-bit BigInt in little-endian format
+                        (<code>BigUInt64LE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -722,20 +830,30 @@
                             ><span class="tsd-signature-symbol"> = 8</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 8.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>8</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">bigint</span>
                     </h4>
-                    <p>The read bigint.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      The read unsigned 64-bit BigInt (value ranges from 0n to
+                      18,446,744,073,709,551,615n).
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:185</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L263"
+                            >BytesIO.ts:263</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -769,8 +887,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 64-bit floating point number (big-endian) from the current pointer.
-                        Advances the pointer by 8 bytes (or specified size).
+                        Reads a 64-bit double-precision floating-point number in big-endian format
+                        (<code>DoubleBE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -783,20 +902,27 @@
                             ><span class="tsd-signature-symbol"> = 8</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 8.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>8</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read double.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The read double-precision floating-point number.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:218</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L302"
+                            >BytesIO.ts:302</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -830,8 +956,10 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 64-bit floating point number (little-endian) from the current
-                        pointer. Advances the pointer by 8 bytes (or specified size).
+                        Reads a 64-bit double-precision floating-point number in little-endian
+                        format (<code>DoubleLE</code>) from the current pointer position.
+                        Automatically advances the pointer by the specified <code>size</code> of
+                        bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -844,20 +972,27 @@
                             ><span class="tsd-signature-symbol"> = 8</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 8.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>8</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read double.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The read double-precision floating-point number.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:207</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L289"
+                            >BytesIO.ts:289</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -891,8 +1026,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 32-bit floating point number (big-endian) from the current pointer.
-                        Advances the pointer by 4 bytes (or specified size).
+                        Reads a 32-bit single-precision floating-point number in big-endian format
+                        (<code>FloatBE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -905,20 +1041,27 @@
                             ><span class="tsd-signature-symbol"> = 4</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 4.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>4</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read float.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The read single-precision floating-point number.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:240</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L328"
+                            >BytesIO.ts:328</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -952,8 +1095,10 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 32-bit floating point number (little-endian) from the current
-                        pointer. Advances the pointer by 4 bytes (or specified size).
+                        Reads a 32-bit single-precision floating-point number in little-endian
+                        format (<code>FloatLE</code>) from the current pointer position.
+                        Automatically advances the pointer by the specified <code>size</code> of
+                        bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -966,20 +1111,27 @@
                             ><span class="tsd-signature-symbol"> = 4</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 4.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>4</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read float.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The read single-precision floating-point number.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:229</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L315"
+                            >BytesIO.ts:315</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1013,8 +1165,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 32-bit signed integer (big-endian) from the current pointer.
-                        Advances the pointer by 4 bytes (or specified size).
+                        Reads a signed 32-bit integer in big-endian format (<code>Int32BE</code>)
+                        from the current pointer position. Automatically advances the pointer by the
+                        specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -1027,20 +1180,30 @@
                             ><span class="tsd-signature-symbol"> = 4</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 4.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>4</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read integer.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      The read signed 32-bit integer (value ranges from -2,147,483,648 to
+                      2,147,483,647).
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:130</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L198"
+                            >BytesIO.ts:198</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1074,8 +1237,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 32-bit signed integer (little-endian) from the current pointer.
-                        Advances the pointer by 4 bytes (or specified size).
+                        Reads a signed 32-bit integer in little-endian format (<code>Int32LE</code>)
+                        from the current pointer position. Automatically advances the pointer by the
+                        specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -1088,20 +1252,30 @@
                             ><span class="tsd-signature-symbol"> = 4</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 4.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>4</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read integer.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      The read signed 32-bit integer (value ranges from -2,147,483,648 to
+                      2,147,483,647).
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:119</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L185"
+                            >BytesIO.ts:185</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1135,8 +1309,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 32-bit unsigned integer (big-endian) from the current pointer.
-                        Advances the pointer by 4 bytes (or specified size).
+                        Reads an unsigned 32-bit integer in big-endian format
+                        (<code>UInt32BE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -1149,20 +1324,27 @@
                             ><span class="tsd-signature-symbol"> = 4</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 4.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>4</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read unsigned integer.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The read unsigned 32-bit integer.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:152</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L224"
+                            >BytesIO.ts:224</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1196,8 +1378,9 @@
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
                       <p>
-                        Reads a 32-bit unsigned integer (little-endian) from the current pointer.
-                        Advances the pointer by 4 bytes (or specified size).
+                        Reads an unsigned 32-bit integer in little-endian format
+                        (<code>UInt32LE</code>) from the current pointer position. Automatically
+                        advances the pointer by the specified <code>size</code> of bytes.
                       </p>
                     </div>
                     <div class="tsd-parameters">
@@ -1210,20 +1393,27 @@
                             ><span class="tsd-signature-symbol"> = 4</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Number of bytes to advance the pointer. Defaults to 4.</p>
+                            <p>
+                              The number of bytes to advance the pointer after reading. Defaults to
+                              <code>4</code>.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The read unsigned integer.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The read unsigned 32-bit integer (value ranges from 0 to 4,294,967,295).</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:141</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L211"
+                            >BytesIO.ts:211</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1260,7 +1450,9 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Moves the internal pointer to a new position.</p>
+                      <p>
+                        Adjusts the position of the internal read/write pointer (offset cursor).
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1271,9 +1463,13 @@
                             <span class="tsd-signature-type">number</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>The offset to move the pointer.</p>
+                            <p>
+                              The byte offset relative to the reference point defined by
+                              <code>whence</code>. - If <code>whence</code> is <code>0</code>, must
+                              be 0 or positive. - If <code>whence</code> is <code>2</code>, must be
+                              less than 0.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                         <li>
                           <span
@@ -1282,16 +1478,21 @@
                             ><span class="tsd-signature-symbol"> = 0</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>The reference point: 0 (start), 1 (current), 2 (end).</p>
+                            <p>
+                              The reference point for the seek operation: -
+                              <code>0</code> (default): Absolute positioning from the start of the
+                              buffer. - <code>1</code>: Relative positioning from the current
+                              pointer position. - <code>2</code>: Relative positioning from the end
+                              of the buffer (expects a negative <code>offset</code>).
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">number</span>
                     </h4>
-                    <p>The new pointer position.</p>
+                    <p>The new pointer position (relative to the start of the buffer).</p>
                     <div class="tsd-comment tsd-typography">
                       <div class="tsd-tag-throws">
                         <h4 class="tsd-anchor-link" id="throws">
@@ -1300,12 +1501,57 @@
                               <use href="../assets/icons.svg#icon-anchor"></use></svg
                           ></a>
                         </h4>
-                        <p>If the offset or whence is invalid.</p>
+                        <p>
+                          If <code>whence</code> is <code>0</code> and <code>offset</code> is
+                          negative.
+                        </p>
+                      </div>
+                      <div class="tsd-tag-throws">
+                        <h4 class="tsd-anchor-link" id="throws-1">
+                          Throws<a href="#throws-1" aria-label="Permalink" class="tsd-anchor-icon"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <use href="../assets/icons.svg#icon-anchor"></use></svg
+                          ></a>
+                        </h4>
+                        <p>
+                          If <code>whence</code> is <code>2</code> and <code>offset</code> is
+                          non-negative.
+                        </p>
+                      </div>
+                      <div class="tsd-tag-throws">
+                        <h4 class="tsd-anchor-link" id="throws-2">
+                          Throws<a href="#throws-2" aria-label="Permalink" class="tsd-anchor-icon"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <use href="../assets/icons.svg#icon-anchor"></use></svg
+                          ></a>
+                        </h4>
+                        <p>
+                          If <code>whence</code> is <code>2</code> and the absolute seek location
+                          would be less than 0.
+                        </p>
+                      </div>
+                      <div class="tsd-tag-throws">
+                        <h4 class="tsd-anchor-link" id="throws-3">
+                          Throws<a href="#throws-3" aria-label="Permalink" class="tsd-anchor-icon"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <use href="../assets/icons.svg#icon-anchor"></use></svg
+                          ></a>
+                        </h4>
+                        <p>
+                          If <code>whence</code> is not <code>0</code>, <code>1</code>, or
+                          <code>2</code>.
+                        </p>
                       </div>
                     </div>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:46</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L90"
+                            >BytesIO.ts:90</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1340,7 +1586,12 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Returns a new BytesIO instance containing a slice of the buffer.</p>
+                      <p>
+                        Returns a new <code>BytesIO</code> instance populated with a subarray/slice
+                        of the current buffer. The slice is created using the standard
+                        <code>Buffer.subarray</code> method, meaning it shares the same allocated
+                        memory as the original buffer.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1353,20 +1604,32 @@
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Arguments passed to Buffer.subarray.</p>
+                            <p>
+                              Arguments passed directly to the underlying
+                              <code>Buffer.subarray</code> method. Typically
+                              <code>[start[, end]]</code>, where <code>start</code> is the starting
+                              index (default 0) and <code>end</code> is the ending index (exclusive,
+                              default buffer length).
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <a href="" class="tsd-signature-type tsd-kind-class">BytesIO</a>
                     </h4>
-                    <p>A new BytesIO instance with the sliced buffer.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      A new <code>BytesIO</code> instance containing the sliced view of the buffer.
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:76</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L126"
+                            >BytesIO.ts:126</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1404,7 +1667,12 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Returns a JSON representation of the buffer.</p>
+                      <p>
+                        Returns a JSON representation of the underlying buffer. This is useful for
+                        serializing the binary data, representing it as an object containing a
+                        <code>type</code> property (typically <code>&quot;Buffer&quot;</code>) and a
+                        <code>data</code> array of byte values.
+                      </p>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-symbol">{</span>
@@ -1418,11 +1686,16 @@
                       <span class="tsd-signature-type">&quot;Buffer&quot;</span>
                       <span class="tsd-signature-symbol">}</span>
                     </h4>
-                    <p>The buffer as a JSON object.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>An object representing the buffer in JSON format.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:83</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L137"
+                            >BytesIO.ts:137</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1457,7 +1730,10 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Returns a string representation of the buffer.</p>
+                      <p>
+                        Decodes the underlying buffer to a string according to the specified
+                        encoding.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1470,20 +1746,33 @@
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Arguments passed to Buffer.toString.</p>
+                            <p>
+                              Arguments passed directly to the underlying
+                              <code>Buffer.toString</code> method. Typically
+                              <code>[encoding[, start[, end]]]</code>, where: -
+                              <code>encoding</code> is the character encoding to use (e.g.,
+                              <code>'utf8'</code>, <code>'hex'</code>, <code>'base64'</code>). -
+                              <code>start</code> is the byte offset to start decoding (default 0). -
+                              <code>end</code> is the byte offset to stop decoding (exclusive,
+                              default buffer length).
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <span class="tsd-signature-type">string</span>
                     </h4>
-                    <p>The buffer as a string.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The decoded string representation of the buffer.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:91</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L151"
+                            >BytesIO.ts:151</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1516,7 +1805,10 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Appends data to the end of the buffer.</p>
+                      <p>
+                        Appends the provided binary data to the absolute end of the underlying
+                        buffer.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1526,19 +1818,40 @@
                             ><span class="tsd-kind-parameter">data</span>:
                             <span class="tsd-signature-type">Buffer</span></span
                           >
-                          <div class="tsd-comment tsd-typography"><p>The Buffer to append.</p></div>
-                          <div class="tsd-comment tsd-typography"></div>
+                          <div class="tsd-comment tsd-typography">
+                            <p>The <code>Buffer</code> containing the binary data to append.</p>
+                          </div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <a href="" class="tsd-signature-type tsd-kind-class">BytesIO</a>
                     </h4>
-                    <p>The BytesIO instance (for chaining).</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>The current <code>BytesIO</code> instance, enabling method chaining.</p>
+                    <div class="tsd-comment tsd-typography">
+                      <div class="tsd-tag-remarks">
+                        <h4 class="tsd-anchor-link" id="remarks-1">
+                          Remarks<a href="#remarks-1" aria-label="Permalink" class="tsd-anchor-icon"
+                            ><svg viewBox="0 0 24 24" aria-hidden="true">
+                              <use href="../assets/icons.svg#icon-anchor"></use></svg
+                          ></a>
+                        </h4>
+                        <p>
+                          This operation concatenates the new data to the existing buffer,
+                          increasing its total length. Note that this method does not modify or
+                          advance the current pointer position (<code>post</code>).
+                        </p>
+                      </div>
+                    </div>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:250</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L344"
+                            >BytesIO.ts:344</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1571,7 +1884,10 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Allocates a new BytesIO instance with a buffer of the given size.</p>
+                      <p>
+                        Allocates a new <code>BytesIO</code> instance populated with a zero-filled
+                        buffer of the specified size.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1582,20 +1898,24 @@
                             <span class="tsd-signature-type">number</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>The size of the buffer to allocate.</p>
+                            <p>The number of bytes to allocate for the initial buffer.</p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <a href="" class="tsd-signature-type tsd-kind-class">BytesIO</a>
                     </h4>
-                    <p>A new BytesIO instance.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>A new <code>BytesIO</code> instance with the allocated buffer.</p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:262</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L358"
+                            >BytesIO.ts:358</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1632,7 +1952,10 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Concatenates an array of Buffers into a new BytesIO instance.</p>
+                      <p>
+                        Concatenates an array of <code>Buffer</code> instances into a single
+                        <code>BytesIO</code> instance.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1647,20 +1970,29 @@
                             ><span class="tsd-signature-symbol">[]</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>The array of Buffers to concatenate.</p>
+                            <p>
+                              An array of <code>Buffer</code> objects to be joined together in
+                              order.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <a href="" class="tsd-signature-type tsd-kind-class">BytesIO</a>
                     </h4>
-                    <p>A new BytesIO instance.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      A new <code>BytesIO</code> instance containing the concatenated binary data.
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:279</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L380"
+                            >BytesIO.ts:380</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>
@@ -1697,7 +2029,10 @@
                   </div>
                   <div class="tsd-description">
                     <div class="tsd-comment tsd-typography">
-                      <p>Creates a new BytesIO instance from the given input.</p>
+                      <p>
+                        Creates a new <code>BytesIO</code> instance from the given input data,
+                        delegating to <code>Buffer.from</code>.
+                      </p>
                     </div>
                     <div class="tsd-parameters">
                       <h4 class="tsd-parameters-title">Parameters</h4>
@@ -1708,9 +2043,13 @@
                             <span class="tsd-signature-type">any</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>The input data (Buffer, Array, string, etc.).</p>
+                            <p>
+                              The input data. Can be a <code>Buffer</code>, <code>Uint8Array</code>,
+                              <code>ArrayBuffer</code>, <code>SharedArrayBuffer</code>, an
+                              <code>Array</code> of numbers, a <code>string</code>, or an object
+                              with a <code>valueOf</code> or <code>Symbol.toPrimitive</code> method.
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                         <li>
                           <span
@@ -1719,20 +2058,30 @@
                             <span class="tsd-signature-type">any</span></span
                           >
                           <div class="tsd-comment tsd-typography">
-                            <p>Optional encoding if input is a string.</p>
+                            <p>
+                              The character encoding to use if the <code>input</code> is a string
+                              (e.g., <code>'utf8'</code>, <code>'hex'</code>,
+                              <code>'base64'</code>).
+                            </p>
                           </div>
-                          <div class="tsd-comment tsd-typography"></div>
                         </li>
                       </ul>
                     </div>
                     <h4 class="tsd-returns-title">
                       Returns <a href="" class="tsd-signature-type tsd-kind-class">BytesIO</a>
                     </h4>
-                    <p>A new BytesIO instance.</p>
-                    <div class="tsd-comment tsd-typography"></div>
+                    <p>
+                      A new <code>BytesIO</code> instance initialized with the parsed input data.
+                    </p>
                     <aside class="tsd-sources">
                       <ul>
-                        <li>Defined in src/BytesIO.ts:271</li>
+                        <li>
+                          Defined in
+                          <a
+                            href="https://github.com/tgsnake/bytesio/blob/743e29fa184039a8e99c151a12b656b2283ba3cd/src/BytesIO.ts#L370"
+                            >BytesIO.ts:370</a
+                          >
+                        </li>
                       </ul>
                     </aside>
                   </div>

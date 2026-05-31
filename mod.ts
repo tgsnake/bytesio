@@ -7,6 +7,4 @@
  * tgsnake is a free software : you can redistribute it and/or modify
  * it under the terms of the MIT License as published.
  */
-
-export { BytesIO } from './BytesIO.js';
-export { BytesIO as default } from './BytesIO.js';
+export * from './src/index.js';
