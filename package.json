@@ -1,7 +1,7 @@
 {
   "name": "@tgsnake/bytesio",
   "packageManager": "yarn@4.9.2",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A simple BytesIO implementation for Typescript",
   "main": "dist/mod.js",
   "types": "dist/mod.d.ts",
