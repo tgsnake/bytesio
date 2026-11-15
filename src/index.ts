@@ -8,5 +8,5 @@
  * it under the terms of the MIT License as published.
  */
 
-export { BytesIO } from './BytesIO.js';
+export { BytesIO, SeekOrigin } from './BytesIO.js';
 export { BytesIO as default } from './BytesIO.js';
