@@ -10,6 +10,15 @@
 import { Buffer } from './deps.js';
 
 /**
+ * Standard seek origin flags matching POSIX and Python's `io` module.
+ */
+export enum SeekOrigin {
+  SEEK_SET = 0,
+  SEEK_CUR = 1,
+  SEEK_END = 2,
+}
+
+/**
  * A versatile in-memory binary stream class utilizing Node.js `Buffer`s.
  * Mimics the behavior of Python's built-in `io.BytesIO` module, providing a stream-like
  * interface for reading and writing binary data in memory.
@@ -40,7 +49,7 @@ import { Buffer } from './deps.js';
  * const stream = BytesIO.from('Hello, World!', 'utf-8');
  *
  * // Seek to position 7 (from the beginning of the buffer)
- * stream.seek(7, 0);
+ * stream.seek(7, BytesIO.SEEK_SET);
  *
  * // Read remaining bytes
  * const msg = stream.read().toString('utf-8');
@@ -48,6 +57,21 @@ import { Buffer } from './deps.js';
  * ```
  */
 export class BytesIO {
+  /**
+   * Seek relative to the beginning of the stream. Offset must be >= 0.
+   */
+  static readonly SEEK_SET: number = 0;
+
+  /**
+   * Seek relative to the current stream position.
+   */
+  static readonly SEEK_CUR: number = 1;
+
+  /**
+   * Seek relative to the end of the stream.
+   */
+  static readonly SEEK_END: number = 2;
+
   /**
    * The raw internal Node.js Buffer instance where binary data is stored.
    * @private
@@ -58,79 +82,201 @@ export class BytesIO {
    * The current internal read/write pointer position (byte offset).
    * @private
    */
-  private _post!: number;
+  private _pos!: number;
+
+  /**
+   * Indicates whether the stream has been closed.
+   * @private
+   */
+  private _closed: boolean = false;
 
   /**
    * Initializes a new instance of the `BytesIO` class.
    *
    * @param buffer - The initial binary buffer to populate the `BytesIO` instance with. Defaults to an empty buffer.
    */
-  constructor(buffer: Buffer = Buffer.alloc(0)) {
-    this._post = 0;
-    this._buffer = buffer;
+  constructor(buffer: Buffer | Uint8Array = Buffer.alloc(0)) {
+    this._pos = 0;
+    this._buffer = Buffer.isBuffer(buffer)
+      ? buffer
+      : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+    this._closed = false;
     return this;
+  }
+
+  /**
+   * Internal helper to verify that the stream has not been closed.
+   * @private
+   */
+  private _checkClosed(msg?: string): void {
+    if (this._closed) {
+      throw new Error(msg ?? 'I/O operation on closed BytesIO instance.');
+    }
   }
 
   /**
    * Adjusts the position of the internal read/write pointer (offset cursor).
    *
    * @param offset - The byte offset relative to the reference point defined by `whence`.
-   *                 - If `whence` is `0`, must be 0 or positive.
-   *                 - If `whence` is `2`, must be less than 0.
+   *                 - If `whence` is `0`, must be 0 or a positive number.
+   *                 - If `whence` is `1`, relative to the current position.
+   *                 - If `whence` is `2`, relative to the end of the buffer (supports 0 for EOF, negative offsets, and clamps underflow to 0).
    * @param whence - The reference point for the seek operation:
-   *                 - `0` (default): Absolute positioning from the start of the buffer.
-   *                 - `1`: Relative positioning from the current pointer position.
-   *                 - `2`: Relative positioning from the end of the buffer (expects a negative `offset`).
+   *                 - `0` (`SEEK_SET`, default): Absolute positioning from the start of the buffer.
+   *                 - `1` (`SEEK_CUR`): Relative positioning from the current pointer position.
+   *                 - `2` (`SEEK_END`): Relative positioning from the end of the buffer.
    * @returns The new pointer position (relative to the start of the buffer).
    * @throws {Error} If `whence` is `0` and `offset` is negative.
-   * @throws {Error} If `whence` is `2` and `offset` is non-negative.
-   * @throws {Error} If `whence` is `2` and the absolute seek location would be less than 0.
    * @throws {Error} If `whence` is not `0`, `1`, or `2`.
    */
-  seek(offset: number, whence: number = 0): number {
-    if (whence === 0) {
+  seek(offset: number, whence: number = BytesIO.SEEK_SET): number {
+    this._checkClosed();
+    if (whence === BytesIO.SEEK_SET) {
       if (offset < 0) {
         throw new Error(`offset of BytesIO.seek must be zero or positive value when whence is 0`);
       }
-      this._post = whence;
-    } else if (whence === 1) {
-      this._post += offset;
-    } else if (whence === 2) {
-      if (offset >= 0) {
-        throw new Error(
-          `offset of BytesIO.seek must be less than zero or negative value when whence is 2`,
-        );
-      }
-      if (Buffer.byteLength(this._buffer) + offset < 0) {
-        throw new Error(
-          `offset out of range, offset ${offset} is less than the available buffer length.`,
-        );
-      }
-      this._post = Buffer.byteLength(this._buffer) + offset;
+      this._pos = offset;
+    } else if (whence === BytesIO.SEEK_CUR) {
+      this._pos = Math.max(0, this._pos + offset);
+    } else if (whence === BytesIO.SEEK_END) {
+      this._pos = Math.max(0, this._buffer.length + offset);
     } else {
-      throw new Error(`whence must be 0 or 1 or 2, but receive ${whence}`);
+      throw new Error(`whence must be 0 or 1 or 2, but received ${whence}`);
     }
-    return this._post;
+    return this._pos;
+  }
+
+  /**
+   * Returns the current stream position (cursor offset).
+   * Parity with Python's `BytesIO.tell()`.
+   *
+   * @returns Current byte offset.
+   */
+  tell(): number {
+    this._checkClosed();
+    return this._pos;
+  }
+
+  /**
+   * Flushes the stream buffers (no-op for in-memory streams, provided for stream parity).
+   */
+  flush(): void {
+    this._checkClosed();
+  }
+
+  /**
+   * Returns whether this stream is readable.
+   */
+  readable(): boolean {
+    return !this._closed;
+  }
+
+  /**
+   * Returns whether this stream is writable.
+   */
+  writable(): boolean {
+    return !this._closed;
+  }
+
+  /**
+   * Returns whether this stream supports random access / seeking.
+   */
+  seekable(): boolean {
+    return !this._closed;
+  }
+
+  /**
+   * Flushes and closes the stream. Once closed, any further read, write, or seek operations will throw an error.
+   */
+  close(): void {
+    if (!this._closed) {
+      this._closed = true;
+      this._buffer = Buffer.alloc(0);
+      this._pos = 0;
+    }
+  }
+
+  /**
+   * Returns a copy of the entire buffer contents.
+   * Parity with Python's `BytesIO.getvalue()`.
+   *
+   * @returns An independent `Buffer` copy containing the full stream contents.
+   */
+  getvalue(): Buffer {
+    this._checkClosed();
+    return Buffer.from(this._buffer);
+  }
+
+  /**
+   * Returns a direct view of the underlying buffer without copying memory.
+   * Parity with Python's `BytesIO.getbuffer()`.
+   *
+   * @returns The underlying `Buffer` instance.
+   */
+  getbuffer(): Buffer {
+    this._checkClosed();
+    return this._buffer;
+  }
+
+  /**
+   * Truncates the stream to the specified size (in bytes).
+   * If `size` is omitted, it defaults to the current pointer position.
+   * If the new size is larger than the current buffer, it is padded with null bytes (`0x00`).
+   * The current stream position is not changed.
+   *
+   * @param size - The target size in bytes. Defaults to current cursor position.
+   * @returns The new size.
+   */
+  truncate(size?: number): number {
+    this._checkClosed();
+    const targetSize = size ?? this._pos;
+
+    if (targetSize < 0) {
+      throw new Error(`negative truncate position: ${targetSize}`);
+    }
+
+    if (targetSize < this._buffer.length) {
+      this._buffer = Buffer.from(this._buffer.subarray(0, targetSize));
+    } else if (targetSize > this._buffer.length) {
+      const newBuf = Buffer.alloc(targetSize);
+      this._buffer.copy(newBuf, 0, 0, this._buffer.length);
+      this._buffer = newBuf;
+    }
+
+    return targetSize;
+  }
+
+  /**
+   * Returns bytes from the current stream position without advancing the pointer.
+   *
+   * @param size - Number of bytes to peek. If omitted or <= 0, peeks all remaining bytes.
+   * @returns A `Buffer` containing the peeked bytes.
+   */
+  peek(size: number = 0): Buffer {
+    this._checkClosed();
+    if (this._pos >= this._buffer.length) {
+      return Buffer.alloc(0);
+    }
+    const readSize = size <= 0 ? this._buffer.length - this._pos : size;
+    const end = Math.min(this._buffer.length, this._pos + readSize);
+    return Buffer.from(this._buffer.subarray(this._pos, end));
   }
 
   /**
    * Returns a new `BytesIO` instance populated with a subarray/slice of the current buffer.
-   * The slice is created using the standard `Buffer.subarray` method, meaning it shares the same
+   * The slice is created using `Buffer.subarray`, meaning it shares the same
    * allocated memory as the original buffer.
    *
    * @param args - Arguments passed directly to the underlying `Buffer.subarray` method.
-   *               Typically `[start[, end]]`, where `start` is the starting index (default 0) and
-   *               `end` is the ending index (exclusive, default buffer length).
    * @returns A new `BytesIO` instance containing the sliced view of the buffer.
    */
   slice(...args: Array<any>): BytesIO {
+    this._checkClosed();
     return new BytesIO(this._buffer.subarray(...args));
   }
 
   /**
    * Returns a JSON representation of the underlying buffer.
-   * This is useful for serializing the binary data, representing it as an object
-   * containing a `type` property (typically `"Buffer"`) and a `data` array of byte values.
    *
    * @returns An object representing the buffer in JSON format.
    */
@@ -142,10 +288,6 @@ export class BytesIO {
    * Decodes the underlying buffer to a string according to the specified encoding.
    *
    * @param args - Arguments passed directly to the underlying `Buffer.toString` method.
-   *               Typically `[encoding[, start[, end]]]`, where:
-   *               - `encoding` is the character encoding to use (e.g., `'utf8'`, `'hex'`, `'base64'`).
-   *               - `start` is the byte offset to start decoding (default 0).
-   *               - `end` is the byte offset to stop decoding (exclusive, default buffer length).
    * @returns The decoded string representation of the buffer.
    */
   toString(...args: Array<any>): string {
@@ -157,22 +299,135 @@ export class BytesIO {
    * Advances the internal pointer by the number of bytes successfully read.
    *
    * @param length - The number of bytes to read.
-   *                 - If `undefined` or not provided, reads all remaining bytes from the current pointer to the end of the buffer.
+   *                 - If `undefined` or negative (e.g. `-1`), reads all remaining bytes to the end of the buffer.
    *                 - If provided, reads at most `length` bytes from the current pointer position.
-   * @returns A new `Buffer` containing the read bytes. If the pointer is out of bounds or `length` is less than 1, returns an empty buffer.
+   * @returns A new `Buffer` containing the read bytes. If the pointer is at or past EOF, returns an empty buffer.
    */
   read(length?: number): Buffer {
-    if (length === undefined) {
-      const results = this._buffer.subarray(this._post);
-      this.seek(Buffer.byteLength(results), 1);
-      return results;
+    this._checkClosed();
+
+    if (length === undefined || length < 0) {
+      if (this._pos >= this._buffer.length) {
+        return Buffer.alloc(0);
+      }
+      const results = this._buffer.subarray(this._pos);
+      this._pos = this._buffer.length;
+      return Buffer.from(results);
     }
-    if (length >= 1 && this._post <= Buffer.byteLength(this._buffer)) {
-      const results = this._buffer.subarray(this._post, this._post + length);
-      this.seek(length, 1);
-      return results;
+
+    if (length === 0 || this._pos >= this._buffer.length) {
+      return Buffer.alloc(0);
     }
-    return Buffer.alloc(0);
+
+    const newPos = Math.min(this._buffer.length, this._pos + length);
+    const results = this._buffer.subarray(this._pos, newPos);
+    this._pos = newPos;
+    return Buffer.from(results);
+  }
+
+  /**
+   * Writes binary data at the current stream pointer position.
+   *
+   * @remarks
+   * If the current pointer is before the end of the buffer, existing bytes are overwritten in-place.
+   * If the current pointer is beyond the end of the buffer, the buffer is padded with null bytes (`0x00`) up to the pointer.
+   * Advances the pointer by the number of bytes written.
+   *
+   * @param data - The `Buffer`, `Uint8Array`, or `string` containing the data to write.
+   * @param encoding - The character encoding if `data` is a string. Defaults to `'utf-8'`.
+   * @returns The current `BytesIO` instance, enabling method chaining.
+   */
+  write(data: Buffer | Uint8Array | string, encoding: BufferEncoding = 'utf-8'): this {
+    this._checkClosed();
+
+    const toWrite: Buffer =
+      typeof data === 'string'
+        ? Buffer.from(data, encoding)
+        : Buffer.isBuffer(data)
+          ? data
+          : Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+
+    if (toWrite.length === 0) {
+      return this;
+    }
+
+    const pos = this._pos;
+    const endPos = pos + toWrite.length;
+
+    if (endPos <= this._buffer.length) {
+      toWrite.copy(this._buffer, pos);
+    } else {
+      const newLength = Math.max(endPos, this._buffer.length);
+      const newBuf = Buffer.alloc(newLength);
+      this._buffer.copy(newBuf, 0, 0, Math.min(this._buffer.length, pos));
+      toWrite.copy(newBuf, pos);
+      this._buffer = newBuf;
+    }
+
+    this._pos = endPos;
+    return this;
+  }
+
+  // --- Typed Integer, Float, and Double Readers ---
+
+  /**
+   * Reads a signed 8-bit integer from the current pointer position.
+   */
+  readInt8(size: number = 1): number {
+    this._checkClosed();
+    const results = this._buffer.readInt8(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
+    return results;
+  }
+
+  /**
+   * Reads an unsigned 8-bit integer from the current pointer position.
+   */
+  readUInt8(size: number = 1): number {
+    this._checkClosed();
+    const results = this._buffer.readUInt8(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
+    return results;
+  }
+
+  /**
+   * Reads a signed 16-bit integer in little-endian format (`Int16LE`).
+   */
+  readInt16LE(size: number = 2): number {
+    this._checkClosed();
+    const results = this._buffer.readInt16LE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
+    return results;
+  }
+
+  /**
+   * Reads a signed 16-bit integer in big-endian format (`Int16BE`).
+   */
+  readInt16BE(size: number = 2): number {
+    this._checkClosed();
+    const results = this._buffer.readInt16BE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
+    return results;
+  }
+
+  /**
+   * Reads an unsigned 16-bit integer in little-endian format (`UInt16LE`).
+   */
+  readUInt16LE(size: number = 2): number {
+    this._checkClosed();
+    const results = this._buffer.readUInt16LE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
+    return results;
+  }
+
+  /**
+   * Reads an unsigned 16-bit integer in big-endian format (`UInt16BE`).
+   */
+  readUInt16BE(size: number = 2): number {
+    this._checkClosed();
+    const results = this._buffer.readUInt16BE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
+    return results;
   }
 
   /**
@@ -180,11 +435,12 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `4`.
-   * @returns The read signed 32-bit integer (value ranges from -2,147,483,648 to 2,147,483,647).
+   * @returns The read signed 32-bit integer.
    */
   readInt32LE(size: number = 4): number {
-    const results = this._buffer.readInt32LE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readInt32LE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -193,11 +449,12 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `4`.
-   * @returns The read signed 32-bit integer (value ranges from -2,147,483,648 to 2,147,483,647).
+   * @returns The read signed 32-bit integer.
    */
   readInt32BE(size: number = 4): number {
-    const results = this._buffer.readInt32BE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readInt32BE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -206,11 +463,12 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `4`.
-   * @returns The read unsigned 32-bit integer (value ranges from 0 to 4,294,967,295).
+   * @returns The read unsigned 32-bit integer.
    */
   readUInt32LE(size: number = 4): number {
-    const results = this._buffer.readUInt32LE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readUInt32LE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -222,8 +480,9 @@ export class BytesIO {
    * @returns The read unsigned 32-bit integer.
    */
   readUInt32BE(size: number = 4): number {
-    const results = this._buffer.readInt32BE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readUInt32BE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -232,11 +491,12 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `8`.
-   * @returns The read signed 64-bit BigInt (value ranges from -9,223,372,036,854,775,808n to 9,223,372,036,854,775,807n).
+   * @returns The read signed 64-bit BigInt.
    */
   readBigInt64LE(size: number = 8): bigint {
-    const results = this._buffer.readBigInt64LE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readBigInt64LE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -245,11 +505,12 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `8`.
-   * @returns The read signed 64-bit BigInt (value ranges from -9,223,372,036,854,775,808n to 9,223,372,036,854,775,807n).
+   * @returns The read signed 64-bit BigInt.
    */
   readBigInt64BE(size: number = 8): bigint {
-    const results = this._buffer.readBigInt64BE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readBigInt64BE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -258,11 +519,12 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `8`.
-   * @returns The read unsigned 64-bit BigInt (value ranges from 0n to 18,446,744,073,709,551,615n).
+   * @returns The read unsigned 64-bit BigInt.
    */
   readBigUInt64LE(size: number = 8): bigint {
-    const results = this._buffer.readBigUInt64LE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readBigUInt64LE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
@@ -271,82 +533,233 @@ export class BytesIO {
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `8`.
-   * @returns The read unsigned 64-bit BigInt (value ranges from 0n to 18,446,744,073,709,551,615n).
+   * @returns The read unsigned 64-bit BigInt.
    */
   readBigUInt64BE(size: number = 8): bigint {
-    const results = this._buffer.readBigUInt64BE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readBigUInt64BE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
   /**
-   * Reads a 64-bit double-precision floating-point number in little-endian format (`DoubleLE`) from the current pointer position.
+   * Reads a 64-bit double-precision floating-point number in little-endian format (`DoubleLE`).
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `8`.
    * @returns The read double-precision floating-point number.
    */
   readDoubleLE(size: number = 8): number {
-    const results = this._buffer.readDoubleLE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readDoubleLE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
   /**
-   * Reads a 64-bit double-precision floating-point number in big-endian format (`DoubleBE`) from the current pointer position.
+   * Reads a 64-bit double-precision floating-point number in big-endian format (`DoubleBE`).
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `8`.
    * @returns The read double-precision floating-point number.
    */
   readDoubleBE(size: number = 8): number {
-    const results = this._buffer.readDoubleBE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readDoubleBE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
   /**
-   * Reads a 32-bit single-precision floating-point number in little-endian format (`FloatLE`) from the current pointer position.
+   * Reads a 32-bit single-precision floating-point number in little-endian format (`FloatLE`).
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `4`.
    * @returns The read single-precision floating-point number.
    */
   readFloatLE(size: number = 4): number {
-    const results = this._buffer.readFloatLE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readFloatLE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
   /**
-   * Reads a 32-bit single-precision floating-point number in big-endian format (`FloatBE`) from the current pointer position.
+   * Reads a 32-bit single-precision floating-point number in big-endian format (`FloatBE`).
    * Automatically advances the pointer by the specified `size` of bytes.
    *
    * @param size - The number of bytes to advance the pointer after reading. Defaults to `4`.
    * @returns The read single-precision floating-point number.
    */
   readFloatBE(size: number = 4): number {
-    const results = this._buffer.readFloatBE(this._post);
-    this.seek(size, 1);
+    this._checkClosed();
+    const results = this._buffer.readFloatBE(this._pos);
+    this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
 
+  // --- Typed Integer, Float, and Double Writers ---
+
   /**
-   * Appends the provided binary data to the absolute end of the underlying buffer.
-   *
-   * @remarks
-   * This operation concatenates the new data to the existing buffer, increasing its total length.
-   * Note that this method does not modify or advance the current pointer position (`post`).
-   *
-   * @param data - The `Buffer` containing the binary data to append.
-   * @returns The current `BytesIO` instance, enabling method chaining.
+   * Writes a signed 8-bit integer at the current stream pointer position.
    */
-  write(data: Buffer): BytesIO {
-    this._buffer = Buffer.concat([
-      this._buffer as unknown as Uint8Array,
-      data as unknown as Uint8Array,
-    ]);
-    return this;
+  writeInt8(value: number): this {
+    const buf = Buffer.allocUnsafe(1);
+    buf.writeInt8(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 8-bit integer at the current stream pointer position.
+   */
+  writeUInt8(value: number): this {
+    const buf = Buffer.allocUnsafe(1);
+    buf.writeUInt8(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a signed 16-bit integer in little-endian format at the current stream pointer position.
+   */
+  writeInt16LE(value: number): this {
+    const buf = Buffer.allocUnsafe(2);
+    buf.writeInt16LE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a signed 16-bit integer in big-endian format at the current stream pointer position.
+   */
+  writeInt16BE(value: number): this {
+    const buf = Buffer.allocUnsafe(2);
+    buf.writeInt16BE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 16-bit integer in little-endian format at the current stream pointer position.
+   */
+  writeUInt16LE(value: number): this {
+    const buf = Buffer.allocUnsafe(2);
+    buf.writeUInt16LE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 16-bit integer in big-endian format at the current stream pointer position.
+   */
+  writeUInt16BE(value: number): this {
+    const buf = Buffer.allocUnsafe(2);
+    buf.writeUInt16BE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a signed 32-bit integer in little-endian format at the current stream pointer position.
+   */
+  writeInt32LE(value: number): this {
+    const buf = Buffer.allocUnsafe(4);
+    buf.writeInt32LE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a signed 32-bit integer in big-endian format at the current stream pointer position.
+   */
+  writeInt32BE(value: number): this {
+    const buf = Buffer.allocUnsafe(4);
+    buf.writeInt32BE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 32-bit integer in little-endian format at the current stream pointer position.
+   */
+  writeUInt32LE(value: number): this {
+    const buf = Buffer.allocUnsafe(4);
+    buf.writeUInt32LE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 32-bit integer in big-endian format at the current stream pointer position.
+   */
+  writeUInt32BE(value: number): this {
+    const buf = Buffer.allocUnsafe(4);
+    buf.writeUInt32BE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a signed 64-bit BigInt in little-endian format at the current stream pointer position.
+   */
+  writeBigInt64LE(value: bigint): this {
+    const buf = Buffer.allocUnsafe(8);
+    buf.writeBigInt64LE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a signed 64-bit BigInt in big-endian format at the current stream pointer position.
+   */
+  writeBigInt64BE(value: bigint): this {
+    const buf = Buffer.allocUnsafe(8);
+    buf.writeBigInt64BE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 64-bit BigInt in little-endian format at the current stream pointer position.
+   */
+  writeBigUInt64LE(value: bigint): this {
+    const buf = Buffer.allocUnsafe(8);
+    buf.writeBigUInt64LE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes an unsigned 64-bit BigInt in big-endian format at the current stream pointer position.
+   */
+  writeBigUInt64BE(value: bigint): this {
+    const buf = Buffer.allocUnsafe(8);
+    buf.writeBigUInt64BE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a 32-bit single-precision floating-point number in little-endian format at the current stream pointer position.
+   */
+  writeFloatLE(value: number): this {
+    const buf = Buffer.allocUnsafe(4);
+    buf.writeFloatLE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a 32-bit single-precision floating-point number in big-endian format at the current stream pointer position.
+   */
+  writeFloatBE(value: number): this {
+    const buf = Buffer.allocUnsafe(4);
+    buf.writeFloatBE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a 64-bit double-precision floating-point number in little-endian format at the current stream pointer position.
+   */
+  writeDoubleLE(value: number): this {
+    const buf = Buffer.allocUnsafe(8);
+    buf.writeDoubleLE(value, 0);
+    return this.write(buf);
+  }
+
+  /**
+   * Writes a 64-bit double-precision floating-point number in big-endian format at the current stream pointer position.
+   */
+  writeDoubleBE(value: number): this {
+    const buf = Buffer.allocUnsafe(8);
+    buf.writeDoubleBE(value, 0);
+    return this.write(buf);
   }
 
   /**
@@ -364,20 +777,20 @@ export class BytesIO {
    *
    * @param input - The input data. Can be a `Buffer`, `Uint8Array`, `ArrayBuffer`, `SharedArrayBuffer`,
    *                an `Array` of numbers, a `string`, or an object with a `valueOf` or `Symbol.toPrimitive` method.
-   * @param encode - The character encoding to use if the `input` is a string (e.g., `'utf8'`, `'hex'`, `'base64'`).
+   * @param encode - The character encoding to use if the `input` is a string.
    * @returns A new `BytesIO` instance initialized with the parsed input data.
    */
-  static from(input: any, encode?: any): BytesIO {
+  static from(input: any, encode?: BufferEncoding): BytesIO {
     return new BytesIO(Buffer.from(input, encode));
   }
 
   /**
-   * Concatenates an array of `Buffer` instances into a single `BytesIO` instance.
+   * Concatenates an array of `Buffer` or `Uint8Array` instances into a single `BytesIO` instance.
    *
-   * @param data - An array of `Buffer` objects to be joined together in order.
+   * @param data - An array of `Buffer` or `Uint8Array` objects to be joined together in order.
    * @returns A new `BytesIO` instance containing the concatenated binary data.
    */
-  static concat(data: Array<Buffer>): BytesIO {
+  static concat(data: Array<Buffer | Uint8Array>): BytesIO {
     return new BytesIO(Buffer.concat(data as unknown as Array<Uint8Array>));
   }
 
@@ -387,7 +800,7 @@ export class BytesIO {
    * @returns The byte length of the buffer.
    */
   get length(): number {
-    return Buffer.byteLength(this._buffer);
+    return this._buffer.length;
   }
 
   /**
@@ -404,7 +817,14 @@ export class BytesIO {
    *
    * @returns The current pointer position.
    */
-  get post(): number {
-    return this._post;
+  get pos(): number {
+    return this._pos;
+  }
+
+  /**
+   * Gets whether the stream has been closed.
+   */
+  get closed(): boolean {
+    return this._closed;
   }
 }
