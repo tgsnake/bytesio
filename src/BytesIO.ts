@@ -96,16 +96,6 @@ export class BytesIO {
     } else if (whence === 1) {
       this._post = Math.max(0, this._post + offset);
     } else if (whence === 2) {
-      if (offset >= 0) {
-        throw new Error(
-          `offset of BytesIO.seek must be less than zero or negative value when whence is 2`,
-        );
-      }
-      if (Buffer.byteLength(this._buffer) + offset < 0) {
-        throw new Error(
-          `offset out of range, offset ${offset} is less than the available buffer length.`,
-        );
-      }
       this._post = Math.max(0, Buffer.byteLength(this._buffer) + offset);
     } else {
       throw new Error(`whence must be 0 or 1 or 2, but receive ${whence}`);
