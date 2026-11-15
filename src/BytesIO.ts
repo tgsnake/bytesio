@@ -75,7 +75,7 @@ export class BytesIO {
    * Adjusts the position of the internal read/write pointer (offset cursor).
    *
    * @param offset - The byte offset relative to the reference point defined by `whence`.
-   *                 - If `whence` is `0`, must be 0 or positive.
+   *                 - If `whence` is `0`, must be 0 or positive number.
    *                 - If `whence` is `2`, must be less than 0.
    * @param whence - The reference point for the seek operation:
    *                 - `0` (default): Absolute positioning from the start of the buffer.
@@ -92,9 +92,9 @@ export class BytesIO {
       if (offset < 0) {
         throw new Error(`offset of BytesIO.seek must be zero or positive value when whence is 0`);
       }
-      this._post = whence;
+      this._post = offset;
     } else if (whence === 1) {
-      this._post += offset;
+      this._post = Math.max(0, this._post + offset);
     } else if (whence === 2) {
       if (offset >= 0) {
         throw new Error(
@@ -106,7 +106,7 @@ export class BytesIO {
           `offset out of range, offset ${offset} is less than the available buffer length.`,
         );
       }
-      this._post = Buffer.byteLength(this._buffer) + offset;
+      this._post = Math.max(0, Buffer.byteLength(this._buffer) + offset);
     } else {
       throw new Error(`whence must be 0 or 1 or 2, but receive ${whence}`);
     }
