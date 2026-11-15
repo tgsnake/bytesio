@@ -82,7 +82,7 @@ export class BytesIO {
    * The current internal read/write pointer position (byte offset).
    * @private
    */
-  private _post!: number;
+  private _pos!: number;
 
   /**
    * Indicates whether the stream has been closed.
@@ -96,7 +96,7 @@ export class BytesIO {
    * @param buffer - The initial binary buffer to populate the `BytesIO` instance with. Defaults to an empty buffer.
    */
   constructor(buffer: Buffer | Uint8Array = Buffer.alloc(0)) {
-    this._post = 0;
+    this._pos = 0;
     this._buffer = Buffer.isBuffer(buffer)
       ? buffer
       : Buffer.from(buffer.buffer, buffer.byteOffset, buffer.byteLength);
@@ -135,15 +135,15 @@ export class BytesIO {
       if (offset < 0) {
         throw new Error(`offset of BytesIO.seek must be zero or positive value when whence is 0`);
       }
-      this._post = offset;
+      this._pos = offset;
     } else if (whence === BytesIO.SEEK_CUR) {
-      this._post = Math.max(0, this._post + offset);
+      this._pos = Math.max(0, this._pos + offset);
     } else if (whence === BytesIO.SEEK_END) {
-      this._post = Math.max(0, this._buffer.length + offset);
+      this._pos = Math.max(0, this._buffer.length + offset);
     } else {
       throw new Error(`whence must be 0 or 1 or 2, but received ${whence}`);
     }
-    return this._post;
+    return this._pos;
   }
 
   /**
@@ -154,7 +154,7 @@ export class BytesIO {
    */
   tell(): number {
     this._checkClosed();
-    return this._post;
+    return this._pos;
   }
 
   /**
@@ -192,7 +192,7 @@ export class BytesIO {
     if (!this._closed) {
       this._closed = true;
       this._buffer = Buffer.alloc(0);
-      this._post = 0;
+      this._pos = 0;
     }
   }
 
@@ -229,7 +229,7 @@ export class BytesIO {
    */
   truncate(size?: number): number {
     this._checkClosed();
-    const targetSize = size ?? this._post;
+    const targetSize = size ?? this._pos;
 
     if (targetSize < 0) {
       throw new Error(`negative truncate position: ${targetSize}`);
@@ -254,12 +254,12 @@ export class BytesIO {
    */
   peek(size: number = 0): Buffer {
     this._checkClosed();
-    if (this._post >= this._buffer.length) {
+    if (this._pos >= this._buffer.length) {
       return Buffer.alloc(0);
     }
-    const readSize = size <= 0 ? this._buffer.length - this._post : size;
-    const end = Math.min(this._buffer.length, this._post + readSize);
-    return Buffer.from(this._buffer.subarray(this._post, end));
+    const readSize = size <= 0 ? this._buffer.length - this._pos : size;
+    const end = Math.min(this._buffer.length, this._pos + readSize);
+    return Buffer.from(this._buffer.subarray(this._pos, end));
   }
 
   /**
@@ -307,21 +307,21 @@ export class BytesIO {
     this._checkClosed();
 
     if (length === undefined || length < 0) {
-      if (this._post >= this._buffer.length) {
+      if (this._pos >= this._buffer.length) {
         return Buffer.alloc(0);
       }
-      const results = this._buffer.subarray(this._post);
-      this._post = this._buffer.length;
+      const results = this._buffer.subarray(this._pos);
+      this._pos = this._buffer.length;
       return Buffer.from(results);
     }
 
-    if (length === 0 || this._post >= this._buffer.length) {
+    if (length === 0 || this._pos >= this._buffer.length) {
       return Buffer.alloc(0);
     }
 
-    const newPos = Math.min(this._buffer.length, this._post + length);
-    const results = this._buffer.subarray(this._post, newPos);
-    this._post = newPos;
+    const newPos = Math.min(this._buffer.length, this._pos + length);
+    const results = this._buffer.subarray(this._pos, newPos);
+    this._pos = newPos;
     return Buffer.from(results);
   }
 
@@ -351,7 +351,7 @@ export class BytesIO {
       return this;
     }
 
-    const pos = this._post;
+    const pos = this._pos;
     const endPos = pos + toWrite.length;
 
     if (endPos <= this._buffer.length) {
@@ -364,7 +364,7 @@ export class BytesIO {
       this._buffer = newBuf;
     }
 
-    this._post = endPos;
+    this._pos = endPos;
     return this;
   }
 
@@ -375,7 +375,7 @@ export class BytesIO {
    */
   readInt8(size: number = 1): number {
     this._checkClosed();
-    const results = this._buffer.readInt8(this._post);
+    const results = this._buffer.readInt8(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -385,7 +385,7 @@ export class BytesIO {
    */
   readUInt8(size: number = 1): number {
     this._checkClosed();
-    const results = this._buffer.readUInt8(this._post);
+    const results = this._buffer.readUInt8(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -395,7 +395,7 @@ export class BytesIO {
    */
   readInt16LE(size: number = 2): number {
     this._checkClosed();
-    const results = this._buffer.readInt16LE(this._post);
+    const results = this._buffer.readInt16LE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -405,7 +405,7 @@ export class BytesIO {
    */
   readInt16BE(size: number = 2): number {
     this._checkClosed();
-    const results = this._buffer.readInt16BE(this._post);
+    const results = this._buffer.readInt16BE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -415,7 +415,7 @@ export class BytesIO {
    */
   readUInt16LE(size: number = 2): number {
     this._checkClosed();
-    const results = this._buffer.readUInt16LE(this._post);
+    const results = this._buffer.readUInt16LE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -425,7 +425,7 @@ export class BytesIO {
    */
   readUInt16BE(size: number = 2): number {
     this._checkClosed();
-    const results = this._buffer.readUInt16BE(this._post);
+    const results = this._buffer.readUInt16BE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -439,7 +439,7 @@ export class BytesIO {
    */
   readInt32LE(size: number = 4): number {
     this._checkClosed();
-    const results = this._buffer.readInt32LE(this._post);
+    const results = this._buffer.readInt32LE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -453,7 +453,7 @@ export class BytesIO {
    */
   readInt32BE(size: number = 4): number {
     this._checkClosed();
-    const results = this._buffer.readInt32BE(this._post);
+    const results = this._buffer.readInt32BE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -467,7 +467,7 @@ export class BytesIO {
    */
   readUInt32LE(size: number = 4): number {
     this._checkClosed();
-    const results = this._buffer.readUInt32LE(this._post);
+    const results = this._buffer.readUInt32LE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -481,7 +481,7 @@ export class BytesIO {
    */
   readUInt32BE(size: number = 4): number {
     this._checkClosed();
-    const results = this._buffer.readUInt32BE(this._post);
+    const results = this._buffer.readUInt32BE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -495,7 +495,7 @@ export class BytesIO {
    */
   readBigInt64LE(size: number = 8): bigint {
     this._checkClosed();
-    const results = this._buffer.readBigInt64LE(this._post);
+    const results = this._buffer.readBigInt64LE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -509,7 +509,7 @@ export class BytesIO {
    */
   readBigInt64BE(size: number = 8): bigint {
     this._checkClosed();
-    const results = this._buffer.readBigInt64BE(this._post);
+    const results = this._buffer.readBigInt64BE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -523,7 +523,7 @@ export class BytesIO {
    */
   readBigUInt64LE(size: number = 8): bigint {
     this._checkClosed();
-    const results = this._buffer.readBigUInt64LE(this._post);
+    const results = this._buffer.readBigUInt64LE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -537,7 +537,7 @@ export class BytesIO {
    */
   readBigUInt64BE(size: number = 8): bigint {
     this._checkClosed();
-    const results = this._buffer.readBigUInt64BE(this._post);
+    const results = this._buffer.readBigUInt64BE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -551,7 +551,7 @@ export class BytesIO {
    */
   readDoubleLE(size: number = 8): number {
     this._checkClosed();
-    const results = this._buffer.readDoubleLE(this._post);
+    const results = this._buffer.readDoubleLE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -565,7 +565,7 @@ export class BytesIO {
    */
   readDoubleBE(size: number = 8): number {
     this._checkClosed();
-    const results = this._buffer.readDoubleBE(this._post);
+    const results = this._buffer.readDoubleBE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -579,7 +579,7 @@ export class BytesIO {
    */
   readFloatLE(size: number = 4): number {
     this._checkClosed();
-    const results = this._buffer.readFloatLE(this._post);
+    const results = this._buffer.readFloatLE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -593,7 +593,7 @@ export class BytesIO {
    */
   readFloatBE(size: number = 4): number {
     this._checkClosed();
-    const results = this._buffer.readFloatBE(this._post);
+    const results = this._buffer.readFloatBE(this._pos);
     this.seek(size, BytesIO.SEEK_CUR);
     return results;
   }
@@ -817,8 +817,8 @@ export class BytesIO {
    *
    * @returns The current pointer position.
    */
-  get post(): number {
-    return this._post;
+  get pos(): number {
+    return this._pos;
   }
 
   /**
