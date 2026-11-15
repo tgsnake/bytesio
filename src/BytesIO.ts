@@ -222,7 +222,7 @@ export class BytesIO {
    * @returns The read unsigned 32-bit integer.
    */
   readUInt32BE(size: number = 4): number {
-    const results = this._buffer.readInt32BE(this._post);
+    const results = this._buffer.readUInt32BE(this._post);
     this.seek(size, 1);
     return results;
   }
